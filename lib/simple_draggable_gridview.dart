@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-class SimpleDraggableGridview extends StatefulWidget {
+class SimpleDraggableGridview extends StatelessWidget {
   final SliverGridDelegate sliverGridDelegate;
   final bool addAutomaticKeepAlives;
   final bool addRepaintBoundaries;
@@ -19,11 +19,17 @@ class SimpleDraggableGridview extends StatefulWidget {
   final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
   final DragStartBehavior dragStartBehavior;
   final ScrollController? controller;
-  final List<Widget> children;
+  final Widget Function(BuildContext, int index) itemBuilder;
+  final Widget Function(BuildContext, int) dragBuilder;
+  final int? itemCount;
+  final void Function(int newIndex, int oldIndex) onSwap;
 
   const SimpleDraggableGridview({
     Key? key,
     required this.sliverGridDelegate,
+    required this.itemBuilder,
+    required this.dragBuilder,
+    required this.onSwap,
     this.addAutomaticKeepAlives = true,
     this.addRepaintBoundaries = true,
     this.addSemanticIndexes = true,
@@ -40,36 +46,48 @@ class SimpleDraggableGridview extends StatefulWidget {
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
     this.dragStartBehavior = DragStartBehavior.start,
     this.controller,
-    this.children = const <Widget>[],
+    this.itemCount,
   }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => SimpleDraggableGridviewState();
-}
-
-class SimpleDraggableGridviewState extends State<SimpleDraggableGridview> {
-  @override
   Widget build(BuildContext context) {
-    return GridView(
-      key: widget.key,
-      gridDelegate: widget.sliverGridDelegate,
-      addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
-      addRepaintBoundaries: widget.addRepaintBoundaries,
-      addSemanticIndexes: widget.addSemanticIndexes,
-      cacheExtent: widget.cacheExtent,
-      clipBehavior: widget.clipBehavior,
-      shrinkWrap: widget.shrinkWrap,
-      semanticChildCount: widget.semanticChildCount,
-      scrollDirection: widget.scrollDirection,
-      reverse: widget.reverse,
-      restorationId: widget.restorationId,
-      primary: widget.primary,
-      physics: widget.physics,
-      padding: widget.padding,
-      keyboardDismissBehavior: widget.keyboardDismissBehavior,
-      dragStartBehavior: widget.dragStartBehavior,
-      controller: widget.controller,
-      children: widget.children,
+    return GridView.builder(
+      key: key,
+      itemCount: itemCount,
+      gridDelegate: sliverGridDelegate,
+      addAutomaticKeepAlives: addAutomaticKeepAlives,
+      addRepaintBoundaries: addRepaintBoundaries,
+      addSemanticIndexes: addSemanticIndexes,
+      cacheExtent: cacheExtent,
+      clipBehavior: clipBehavior,
+      shrinkWrap: shrinkWrap,
+      semanticChildCount: semanticChildCount,
+      scrollDirection: scrollDirection,
+      reverse: reverse,
+      restorationId: restorationId,
+      primary: primary,
+      physics: physics,
+      padding: padding,
+      keyboardDismissBehavior: keyboardDismissBehavior,
+      dragStartBehavior: dragStartBehavior,
+      controller: controller,
+      itemBuilder: buildItem,
     );
   }
+
+  Widget buildItem(BuildContext context, int index) {
+    return Draggable<int>(
+      data: index,
+      feedback: dragBuilder(context, index),
+      child: DragTarget<int>(
+        onWillAccept: (data) => data != null,
+        onAccept: (data) => swap(data, index),
+        builder: (context, accepted, rejected) => itemBuilder(context, index),
+      ),
+      childWhenDragging: Container(),
+    );
+  }
+
+  /// function taht swap item.
+  void swap(int indexOne, int indexTwo) => onSwap(indexOne, indexTwo);
 }
