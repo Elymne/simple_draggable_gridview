@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-class SimpleDraggableGridview extends StatelessWidget {
+class SimpleDraggableGridview extends StatefulWidget {
   final SliverGridDelegate sliverGridDelegate;
   final bool addAutomaticKeepAlives;
   final bool addRepaintBoundaries;
@@ -50,44 +50,69 @@ class SimpleDraggableGridview extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<StatefulWidget> createState() => SimpleDraggableGridviewState();
+}
+
+class SimpleDraggableGridviewState extends State<SimpleDraggableGridview> with TickerProviderStateMixin {
+  late final AnimationController animationController = AnimationController(
+    duration: const Duration(seconds: 2),
+    vsync: this,
+  );
+
+  @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      key: key,
-      itemCount: itemCount,
-      gridDelegate: sliverGridDelegate,
-      addAutomaticKeepAlives: addAutomaticKeepAlives,
-      addRepaintBoundaries: addRepaintBoundaries,
-      addSemanticIndexes: addSemanticIndexes,
-      cacheExtent: cacheExtent,
-      clipBehavior: clipBehavior,
-      shrinkWrap: shrinkWrap,
-      semanticChildCount: semanticChildCount,
-      scrollDirection: scrollDirection,
-      reverse: reverse,
-      restorationId: restorationId,
-      primary: primary,
-      physics: physics,
-      padding: padding,
-      keyboardDismissBehavior: keyboardDismissBehavior,
-      dragStartBehavior: dragStartBehavior,
-      controller: controller,
+      key: widget.key,
+      itemCount: widget.itemCount,
+      gridDelegate: widget.sliverGridDelegate,
+      addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
+      addRepaintBoundaries: widget.addRepaintBoundaries,
+      addSemanticIndexes: widget.addSemanticIndexes,
+      cacheExtent: widget.cacheExtent,
+      clipBehavior: widget.clipBehavior,
+      shrinkWrap: widget.shrinkWrap,
+      semanticChildCount: widget.semanticChildCount,
+      scrollDirection: widget.scrollDirection,
+      reverse: widget.reverse,
+      restorationId: widget.restorationId,
+      primary: widget.primary,
+      physics: widget.physics,
+      padding: widget.padding,
+      keyboardDismissBehavior: widget.keyboardDismissBehavior,
+      dragStartBehavior: widget.dragStartBehavior,
+      controller: widget.controller,
       itemBuilder: buildItem,
     );
   }
 
+  @override
+  void dispose() {
+    animationController.dispose();
+    super.dispose();
+  }
+
   Widget buildItem(BuildContext context, int index) {
-    return Draggable<int>(
-      data: index,
-      feedback: dragBuilder(context, index),
-      child: DragTarget<int>(
-        onWillAccept: (data) => data != null,
-        onAccept: (data) => swap(data, index),
-        builder: (context, accepted, rejected) => itemBuilder(context, index),
+    Animation<double> translateVerticalAxisAnimation = Tween<double>(begin: 0, end: 100).animate(animationController);
+    Animation<double> translateHorizontalAxisAnimation = Tween<double>(begin: 0, end: 100).animate(animationController);
+
+    return Transform.translate(
+      offset: Offset(translateVerticalAxisAnimation.value, translateHorizontalAxisAnimation.value),
+      child: Draggable<int>(
+        data: index,
+        feedback: widget.dragBuilder(context, index),
+        child: DragTarget<int>(
+          onWillAccept: (data) => data != null,
+          onAccept: (data) => swap(data, index, translateVerticalAxisAnimation, translateHorizontalAxisAnimation),
+          builder: (context, accepted, rejected) => widget.itemBuilder(context, index),
+        ),
+        childWhenDragging: Container(),
       ),
-      childWhenDragging: Container(),
     );
   }
 
   /// function taht swap item.
-  void swap(int indexOne, int indexTwo) => onSwap(indexOne, indexTwo);
+  void swap(int indexOne, int indexTwo, Animation<double> translateVerticalAxisAnimation, Animation<double> translateHorizontalAxisAnimation) {
+    animationController.addListener(() => setState(() {}));
+    widget.onSwap(indexOne, indexTwo);
+  }
 }
